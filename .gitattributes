@@ -1,0 +1,9 @@
+# Normalise to LF everywhere. Files are copied into Linux containers and run by
+# Linux CI runners; CRLF breaks shell scripts and produces noisy diffs.
+* text=auto eol=lf
+
+*.pdf  binary
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.tiff binary

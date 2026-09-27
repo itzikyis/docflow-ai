@@ -1,0 +1,32 @@
+# Build output
+/bin/
+*.exe
+*.test
+
+# Test and coverage artifacts
+coverage.out
+coverage.html
+
+# Local configuration and data
+.env
+.env.*
+!.env.example
+/.data/
+/tmp/
+
+# Terraform (the lock file is committed on purpose)
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+
+# Helm
+/deploy/helm/**/charts/*.tgz
+
+# Editors and OS
+.idea/
+*.swp
+.DS_Store
+Thumbs.db

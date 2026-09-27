@@ -1,0 +1,40 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  # standard = errcheck, govet, ineffassign, staticcheck, unused
+  default: standard
+  enable:
+    - bodyclose      # unclosed HTTP response bodies
+    - errorlint      # errors compared with == instead of errors.Is/As
+    - gosec          # common security mistakes
+    - misspell
+    - noctx          # HTTP/SQL calls without a context
+    - revive         # style: exported docs, naming
+    - rowserrcheck   # sql.Rows.Err not checked
+    - sloglint       # consistent log/slog usage
+    - sqlclosecheck  # sql.Rows / Stmt not closed
+    - unconvert
+    - unparam
+  settings:
+    sloglint:
+      kv-only: true
+  exclusions:
+    presets:
+      - std-error-handling
+    rules:
+      - path: _test\.go
+        linters:
+          - gosec
+          - unparam
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/itzikyis/docflow-ai
