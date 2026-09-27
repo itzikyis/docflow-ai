@@ -32,6 +32,9 @@ help:
 	@echo   check     Run vet, lint and tests - the pre-push gate
 	@echo   tidy      Tidy go.mod and go.sum
 	@echo   clean     Remove build output
+	@echo   docker    Build a container image for every service
+	@echo   up        Start the local stack with docker compose
+	@echo   down      Stop the local stack and remove its containers
 
 .PHONY: build
 build: $(addprefix build-,$(SERVICES))
@@ -74,3 +77,17 @@ tidy:
 .PHONY: clean
 clean:
 	$(RM_BIN)
+
+.PHONY: docker
+docker: $(addprefix docker-,$(SERVICES))
+
+docker-%:
+	docker build --build-arg SERVICE=$* --build-arg VERSION=$(VERSION) -t docflow-ai/$*:$(VERSION) -t docflow-ai/$*:local .
+
+.PHONY: up
+up:
+	docker compose up --build
+
+.PHONY: down
+down:
+	docker compose down

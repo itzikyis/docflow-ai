@@ -1,0 +1,12 @@
+# Local development stack. Dependencies (PostgreSQL, Pub/Sub emulator, workers)
+# are added in the phases that introduce them.
+name: docflow-ai
+
+services:
+  api:
+    build:
+      context: .
+      args:
+        SERVICE: api
+        VERSION: ${VERSION:-dev}
+    image: docflow-ai/api:local

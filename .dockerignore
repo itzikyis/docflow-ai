@@ -1,0 +1,17 @@
+.git
+.github
+.idea
+.vscode
+.data
+bin
+tmp
+coverage.*
+*.exe
+.env
+.env.*
+
+docs
+deploy
+terraform
+tests
+*.md
