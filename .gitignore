@@ -30,3 +30,6 @@ crash.log
 *.swp
 .DS_Store
 Thumbs.db
+
+# Local AI assistant instructions
+CLAUDE.md
