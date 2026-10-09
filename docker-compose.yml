@@ -10,3 +10,9 @@ services:
         SERVICE: api
         VERSION: ${VERSION:-dev}
     image: docflow-ai/api:local
+    ports:
+      - "8080:8080"
+    environment:
+      LOG_LEVEL: debug
+      # No load balancer to drain from locally.
+      SHUTDOWN_DRAIN_DELAY: 0s

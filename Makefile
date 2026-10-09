@@ -43,6 +43,8 @@ build-%:
 	go build -trimpath -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/$*$(EXE) ./cmd/$*
 
 .PHONY: run
+run: export LOG_FORMAT ?= text
+run: export SHUTDOWN_DRAIN_DELAY ?= 0s
 run:
 	go run -ldflags "$(LDFLAGS)" ./cmd/api
 

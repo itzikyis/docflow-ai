@@ -2,10 +2,16 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"net"
 	"os"
+	"os/signal"
+	"strconv"
+	"syscall"
 
 	"github.com/itzikyis/docflow-ai/internal/config"
+	"github.com/itzikyis/docflow-ai/internal/httpapi"
 	"github.com/itzikyis/docflow-ai/internal/logging"
 )
 
@@ -28,6 +34,22 @@ func run() error {
 	logger := logging.New(os.Stdout, cfg.LogLevel, cfg.LogFormat).
 		With("service", "api", "version", version)
 
-	logger.Info("api starting", "port", cfg.Port, "max_upload_bytes", cfg.MaxUploadBytes)
-	return nil
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	health := httpapi.NewHealth(logger, nil)
+	handler := httpapi.NewHandler(httpapi.Deps{Logger: logger, Health: health})
+	server := httpapi.NewServer(handler, health, logger, httpapi.ShutdownConfig{
+		DrainDelay: cfg.ShutdownDrainDelay,
+		Timeout:    cfg.ShutdownTimeout,
+	})
+
+	var lc net.ListenConfig
+	ln, err := lc.Listen(ctx, "tcp", net.JoinHostPort("", strconv.Itoa(cfg.Port)))
+	if err != nil {
+		return fmt.Errorf("listen: %w", err)
+	}
+	logger.Info("api listening", "addr", ln.Addr().String())
+
+	return server.Serve(ctx, ln)
 }
