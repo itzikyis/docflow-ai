@@ -3,19 +3,28 @@ package httpapi
 import (
 	"log/slog"
 	"net/http"
+
+	"github.com/itzikyis/docflow-ai/internal/document"
 )
 
 // Deps are the dependencies of the HTTP handlers.
 type Deps struct {
-	Logger *slog.Logger
-	Health *Health
+	Logger         *slog.Logger
+	Health         *Health
+	Documents      *document.Service
+	MaxUploadBytes int64
 }
 
 // NewHandler returns the API's root handler.
 func NewHandler(d Deps) http.Handler {
+	docs := &documentHandlers{svc: d.Documents, logger: d.Logger, maxUploadBytes: d.MaxUploadBytes}
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", d.Health.live)
 	mux.HandleFunc("GET /ready", d.Health.ready)
+	mux.HandleFunc("POST /documents", docs.upload)
+	mux.HandleFunc("GET /documents/{id}", docs.get)
+	mux.HandleFunc("GET /documents/{id}/status", docs.status)
 
 	return chain(mux,
 		withRequestID,
