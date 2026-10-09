@@ -4,7 +4,7 @@
 
 DocFlow AI accepts business documents such as invoices, processes them asynchronously through OCR and AI-based classification and extraction, validates the extracted fields against confidence thresholds, and exposes structured results through a REST API. It is built in Go, runs on GKE, and is provisioned with Terraform.
 
-> 🚧 **Under active development.** The project is built in phases, and each phase is documented and its decisions recorded. **Current phase: 0 — architecture and repository foundation.** See the [roadmap](#roadmap).
+> 🚧 **Under active development.** The project is built in phases, and each phase is documented and its decisions recorded. **Done so far: the REST API with health probes, graceful shutdown, structured logging and document upload. Processing is simulated in-process.** See the [roadmap](#roadmap).
 
 ## Architecture
 
@@ -50,17 +50,38 @@ git clone https://github.com/itzikyis/docflow-ai.git
 cd docflow-ai
 
 make check    # vet, lint, test
-make build    # binaries in bin/
-make docker   # container images
+make run      # API on http://localhost:8080
 ```
+
+Then, in another terminal (on Windows use `curl.exe`):
+
+```sh
+curl -i -F "file=@invoice.pdf" http://localhost:8080/documents
+# HTTP/1.1 202 Accepted
+# Location: /documents/0192f7b4-9a3c-7d2e-8f41-3b6c5d7e8f90
+# {"id":"0192f7b4-...","status":"UPLOADED","statusUrl":"/documents/0192f7b4-.../status"}
+
+curl http://localhost:8080/documents/<id>/status
+# {"id":"0192f7b4-...","status":"PROCESSING","updatedAt":"2026-10-09T15:17:49Z"}
+```
+
+Errors are [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) problem documents:
+
+```json
+{"type":"about:blank","title":"Unsupported Media Type","status":415,
+ "detail":"unsupported document type; accepted types are PDF, PNG and JPEG",
+ "instance":"/documents","requestId":"4FZOGA4YCNQBOOOZMHRMSRXJE4"}
+```
+
+The full contract is in [api/openapi.yaml](api/openapi.yaml). `make docker` builds container images and `make up` runs the stack with Docker Compose.
 
 ## Roadmap
 
 | Phase | Scope | Status |
 |---|---|---|
 | 0 | Architecture, repository, tooling, ADRs | ✅ |
-| 1 | Go REST API, health checks, middleware, graceful shutdown, CI | ⏳ |
-| 2 | PostgreSQL: schema, migrations, repositories | |
+| 1 | Go REST API, health checks, middleware, graceful shutdown, CI | ✅ |
+| 2 | PostgreSQL: schema, migrations, repositories | ⏳ |
 | 3 | Object storage abstraction and Cloud Storage | |
 | 4 | Pub/Sub, event contracts, transactional outbox | |
 | 5 | Worker framework and OCR worker | |
@@ -83,10 +104,15 @@ make docker   # container images
 ## Repository layout
 
 ```text
-cmd/          deployable binaries
-docs/         architecture, guides, ADRs
-Dockerfile    one multi-stage build for every service
-Makefile      build, test, lint, docker targets
+cmd/api/             API entry point (wiring only)
+internal/config/     environment configuration
+internal/logging/    structured logging, request-scoped log attributes
+internal/document/   domain: document, status state machine, service
+internal/httpapi/    HTTP server, middleware, handlers, errors
+api/openapi.yaml     REST contract
+docs/                architecture, guides, ADRs
+Dockerfile           one multi-stage build for every service
+Makefile             build, test, lint, docker targets
 ```
 
-More directories (`internal/`, `migrations/`, `deploy/`, `terraform/`, ...) are added in the phases that introduce them.
+More directories (`migrations/`, `deploy/`, `terraform/`, ...) are added in the phases that introduce them.

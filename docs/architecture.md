@@ -99,6 +99,7 @@ stateDiagram-v2
     PROCESSING --> REVIEW_REQUIRED: low confidence or validation failure
     PROCESSING --> FAILED: retries exhausted
     QUEUED --> FAILED: retries exhausted
+    UPLOADED --> FAILED: event could not be published
     COMPLETED --> [*]
     REVIEW_REQUIRED --> [*]
     FAILED --> [*]
@@ -174,12 +175,32 @@ tests/e2e/      black-box end-to-end tests
 
 Directories are added in the phase that first needs them. Unit and integration tests live next to the code they test, following Go convention.
 
+### Packages
+
+| Package | Responsibility | Depends on |
+|---|---|---|
+| `cmd/api` | Wiring only: load config, build dependencies, run the server | everything below |
+| `internal/config` | Environment variables to a validated `Config` | — |
+| `internal/logging` | `slog` setup (Cloud Logging field names) and request-scoped log attributes carried in `context.Context` | — |
+| `internal/document` | Domain: `Document`, status state machine, `Service`, `Repository` and `Dispatcher` interfaces | `logging` |
+| `internal/httpapi` | HTTP adapter: server lifecycle, routes, middleware, handlers, RFC 9457 errors | `document`, `logging` |
+
+Dependencies point inwards: `document` knows nothing about HTTP, so the workers in later phases reuse it without pulling in web code. Interfaces are declared by the package that *uses* them (`document.Repository`, `document.Dispatcher`), which is the idiomatic Go direction.
+
+### HTTP request path
+
+```text
+withRequestID → accessLog → recoverPanics → ServeMux → handler
+```
+
+The request ID is assigned first, so every later log line, including the access log and any panic, carries it. Recovery is innermost so the access log records the resulting 500.
+
 ## Roadmap
 
 | Phase | Scope | Status |
 |---|---|---|
 | 0 | Architecture, repository, tooling, ADRs | ✅ Done |
-| 1 | Go REST API: health and readiness, middleware, graceful shutdown, basic CI | Planned |
+| 1 | Go REST API: health and readiness, middleware, graceful shutdown, basic CI | ✅ Done |
 | 2 | PostgreSQL: schema, migrations, repositories | Planned |
 | 3 | Object storage behind an interface; Cloud Storage | Planned |
 | 4 | Pub/Sub, event contracts, transactional outbox, dead-lettering | Planned |
