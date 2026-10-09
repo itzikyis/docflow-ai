@@ -18,9 +18,6 @@ linters:
     - sqlclosecheck  # sql.Rows / Stmt not closed
     - unconvert
     - unparam
-  settings:
-    sloglint:
-      kv-only: true
   exclusions:
     presets:
       - std-error-handling
